@@ -32,7 +32,6 @@ export default class EditView extends Component {
   }
 }
 
-
 const LoginStyles = StyleSheet.create({
   TextInputView: {
     marginTop: 10,

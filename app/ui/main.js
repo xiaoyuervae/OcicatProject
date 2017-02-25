@@ -44,6 +44,11 @@ export default class LoginActivity extends Component {
               <Text>奥西签到</Text>
             </View>
             <View style={{
+              marginTop: 50,
+              height: 1,
+              backgroundColor: 'gray',
+            }}></View>
+            <View style={{
                   marginTop: 80
               }}>
              <EditView  name='输入用户名/注册手机号' onChangeText={(text) => {
@@ -108,7 +113,9 @@ const LoginStyles = StyleSheet.create({
   backgroundView: {
     flex: 1,
     backgroundColor: '#79C4E4',
-    padding: 20
+    paddingTop: 20,
+    paddingLeft: 20,
+    paddingRight: 20
   },
   loginview: {
     flex: 1,
