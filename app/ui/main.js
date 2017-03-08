@@ -1,3 +1,4 @@
+
 import React, {
   Component
 } from 'react';
@@ -9,13 +10,25 @@ import {
   View,
   Image,
   TextInput,
-  TouchableOpacity
+  TouchableOpacity,
+  Alert,
+  AsyncStorage
 } from 'react-native';
 import EditView from '../lib/EditView';
 import LoginButton from '../lib/LoginButton';
 import LoginSuccess from '../ui/LoginSuccess';
 import NetUitl from '../lib/NetUtil';
 import SmallLoginButton from '../lib/SmallLoginButton'
+// tcomb-form-native
+var t = require('tcomb-form-native');
+var STORAGE_KEY =  'id_token';
+var Form = t.form.Form;
+var Person = t.struct({
+    username: t. String,
+    password: t. String
+});
+const options = {};
+
 export default class LoginActivity extends Component {
   constructor(props) {
     super(props);
@@ -51,7 +64,7 @@ export default class LoginActivity extends Component {
               }}>奥西签到</Text>
             </View>
             <View style={{
-              marginTop: 50,
+              marginTop: 30,
               height: 1,
               backgroundColor: 'gray',
             }}></View>
@@ -77,7 +90,7 @@ export default class LoginActivity extends Component {
                <EditView name='输入密码' onChangeText={(text) => {
                     this.password = text;
                 }}/>
-                <LoginButton name='登录' onPressCallback={this.onPressCallback}/>
+                <LoginButton name='登录' onPressCallback={this._userLogin}/>
               </View> :
               <View style={{
               }}>
@@ -97,6 +110,100 @@ export default class LoginActivity extends Component {
   }
 
 
+  _userSignup = () => {
+    var value =  this.refs.form.getValue();
+    if (value) {  // if validation fails, value will be null
+        fetch( "http://localhost:3001/users", {
+            method:  "POST",
+            headers: {
+                'Accept':  'application/json',
+                'Content-Type':  'application/json'
+            },
+            body: JSON.stringify({
+                username: value.username,
+                password: value.password,
+            })
+        })
+        .then((response) => response.json())
+        .then((responseData) => {
+            this._onValueChange(STORAGE_KEY, responseData.id_token),
+            Alert.alert(
+            "Signup Success!",
+            "Click the button to get a Chuck Norris quote!"
+            )
+        })
+        .done();
+    }
+  };
+
+  _userLogin= () => {
+    var value =  {
+      data: {
+        username: 'xiaoyuervae',
+        password: 'standby123@',
+        email: 'xiaoyuervae@icloud.com'
+      }
+    };
+    var token = AsyncStorage.getItem(value.data.username);
+    if (token) {
+      return this._getProtectedQuote;
+    }
+    if (value) {  // if validation fails, value will be null
+        fetch( "http://apidev.ocicat.swordage.com:3010/me", {
+            method:  "POST",
+            headers: {
+                'Accept':  'application/json',
+                'Content-Type':  'application/json'
+            },
+            body: JSON.stringify(value)
+        })
+        .then((response) => response.json())
+        .then((responseData) => {
+            console.log(JSON.stringify(responseData));
+            Alert.alert(
+            "Login Success!",
+            "Click the button to get a Chuck Norris quote!"
+            ),
+            this._onValueChange(STORAGE_KEY, responseData.token)
+        })
+        .done();
+    }
+  };
+
+  async _onValueChange(item, selectedValue) {
+    try {
+      await AsyncStorage.setItem(item, selectedValue);
+    } catch (error) {
+      console.log('AsyncStorage error: ' + error.message);
+    }
+  };
+
+  async _getProtectedQuote() {
+    var DEMO_TOKEN = await AsyncStorage.getItem(STORAGE_KEY);
+    fetch("http://localhost:3001/api/protected/random-quote", {
+      method: "GET",
+      headers: {
+        'Authorization': 'Bearer ' + DEMO_TOKEN
+      }
+    })
+    .then((response) => response.text())
+    .then((quote) => {
+      AlertIOS.alert(
+        "Chuck Norris Quote:", quote)
+    })
+    .done();
+  };
+
+
+  async _userLogout() {
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+      AlertIOS.alert("Logout Success!")
+    } catch (error) {
+      console.log('AsyncStorage error: ' + error.message);
+    }
+  };
+
   changeLogin = () => {
     this.setState({
       isLoginOrSignup: true
@@ -109,19 +216,9 @@ export default class LoginActivity extends Component {
     });
   };
 
-  onPressCallback = () => {
-    let formData = new FormData();
-    formData.append("loginName", this.userName);
-    formData.append("pwd", this.password);
-    let url = "http://localhost:8080/loginApp";
-    NetUitl.postJson(url, formData, (responseText) => {
-      alert(responseText);
-      this.onLoginSuccess();
-    })
-  };
 
   //跳转到第二个页面去
-  onLoginSuccess() {
+  onLoginSuccess = () => {
     const {
       navigator
     } = this.props;
@@ -132,15 +229,14 @@ export default class LoginActivity extends Component {
       });
     }
   }
-
 }
 
 class loginLineView extends Component {
   render() {
     return (
       <Text >
-            没有帐号
-          </Text>
+        没有帐号
+      </Text>
     );
   }
 }
