@@ -15,11 +15,15 @@ import EditView from '../lib/EditView';
 import LoginButton from '../lib/LoginButton';
 import LoginSuccess from '../ui/LoginSuccess';
 import NetUitl from '../lib/NetUtil';
+import SmallLoginButton from '../lib/SmallLoginButton'
 export default class LoginActivity extends Component {
   constructor(props) {
     super(props);
     this.userName = "";
     this.password = "";
+    this.state = {
+      isLoginOrSignup: true
+    };
   }
 
   render() {
@@ -41,35 +45,69 @@ export default class LoginActivity extends Component {
               justifyContent: 'center',
               alignItems: 'flex-start',
             }}>
-              <Text>奥西签到</Text>
+              <Text style={{
+                fontFamily:'iconfont',
+                fontSize: 40,
+              }}>奥西签到</Text>
             </View>
             <View style={{
               marginTop: 50,
               height: 1,
               backgroundColor: 'gray',
             }}></View>
+            {/*Text中不再使用flex布局*/}
             <View style={{
-                  marginTop: 80
-              }}>
-             <EditView  name='输入用户名/注册手机号' onChangeText={(text) => {
-                  this.userName = text;
-              }}/>
-             <EditView name='输入密码' onChangeText={(text) => {
-                  this.password = text;
-              }}/>
-              <LoginButton name='登录' onPressCallback={this.onPressCallback}/>
-              <Text style={{
-                  color: "#4A90E2",
-                  textAlign: 'center',
-                  marginTop: 10
-              }} >忘记密码？</Text>
+              flexDirection: 'row',
+              justifyContent: 'center',
+              height: 60,
+              justifyContent: 'space-around',
+              paddingTop: 10,
+              paddingLeft: 40,
+              paddingRight: 40,
+            }}>
+              <SmallLoginButton onPressCallback={this.changeLogin} name="登录"/>
+              <SmallLoginButton onPressCallback={this.changeSignup} name="注册"/>
             </View>
+            { this.state.isLoginOrSignup == true ?
+              <View style={{
+              }}>
+               <EditView  name='输入用户名/注册手机号' onChangeText={(text) => {
+                    this.userName = text;
+                }}/>
+               <EditView name='输入密码' onChangeText={(text) => {
+                    this.password = text;
+                }}/>
+                <LoginButton name='登录' onPressCallback={this.onPressCallback}/>
+              </View> :
+              <View style={{
+              }}>
+               <EditView  name='输入用户名/注册手机号' onChangeText={(text) => {
+                    this.userName = text;
+                }}/>
+               <EditView name='输入密码' onChangeText={(text) => {
+                    this.password = text;
+                }}/>
+                <LoginButton name='注册' onPressCallback={this.onPressCallback}/>
+              </View>
+            }
           </View>
         </View>
       </View>
     )
   }
 
+
+  changeLogin = () => {
+    this.setState({
+      isLoginOrSignup: true
+    })
+  };
+
+  changeSignup = () => {
+    this.setState({
+      isLoginOrSignup: false
+    });
+  };
 
   onPressCallback = () => {
     let formData = new FormData();
@@ -80,8 +118,6 @@ export default class LoginActivity extends Component {
       alert(responseText);
       this.onLoginSuccess();
     })
-
-
   };
 
   //跳转到第二个页面去
