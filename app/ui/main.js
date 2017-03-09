@@ -12,13 +12,13 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  AsyncStorage
 } from 'react-native';
 import EditView from '../lib/EditView';
 import LoginButton from '../lib/LoginButton';
 import LoginSuccess from '../ui/LoginSuccess';
 import NetUitl from '../lib/NetUtil';
 import SmallLoginButton from '../lib/SmallLoginButton'
+import DeviceStorage from '../lib/DeviceStorage'
 // tcomb-form-native
 var t = require('tcomb-form-native');
 var STORAGE_KEY =  'id_token';
@@ -68,7 +68,6 @@ export default class LoginActivity extends Component {
               height: 1,
               backgroundColor: 'gray',
             }}></View>
-            {/*Text中不再使用flex布局*/}
             <View style={{
               flexDirection: 'row',
               justifyContent: 'center',
@@ -78,8 +77,8 @@ export default class LoginActivity extends Component {
               paddingLeft: 40,
               paddingRight: 40,
             }}>
-              <SmallLoginButton onPressCallback={this.changeLogin} name="登录"/>
-              <SmallLoginButton onPressCallback={this.changeSignup} name="注册"/>
+              <SmallLoginButton onPressCallback={this.changeLogin} name="登录" />
+              <SmallLoginButton onPressCallback={this.changeSignup} name="注册" />
             </View>
             { this.state.isLoginOrSignup == true ?
               <View style={{
@@ -144,11 +143,12 @@ export default class LoginActivity extends Component {
         email: 'xiaoyuervae@icloud.com'
       }
     };
-    var token = AsyncStorage.getItem(value.data.username);
-    if (token) {
-      return this._getProtectedQuote;
-    }
-    if (value) {  // if validation fails, value will be null
+    DeviceStorage.get(value.data.username)
+    .then( (token) => {
+      if (token) {
+        this._getProtectedQuote(token);
+      }
+      else if (value) {  // if validation fails, value will be null
         fetch( "http://apidev.ocicat.swordage.com:3010/me", {
             method:  "POST",
             headers: {
@@ -164,45 +164,30 @@ export default class LoginActivity extends Component {
             "Login Success!",
             "Click the button to get a Chuck Norris quote!"
             ),
-            this._onValueChange(STORAGE_KEY, responseData.token)
+            DeviceStorage.save(STORAGE_KEY, responseData.token);
+            this._getProtectedQuote(responseData.token);
         })
         .done();
-    }
+      }
+    });
   };
 
-  async _onValueChange(item, selectedValue) {
-    try {
-      await AsyncStorage.setItem(item, selectedValue);
-    } catch (error) {
-      console.log('AsyncStorage error: ' + error.message);
-    }
-  };
 
-  async _getProtectedQuote() {
-    var DEMO_TOKEN = await AsyncStorage.getItem(STORAGE_KEY);
-    fetch("http://localhost:3001/api/protected/random-quote", {
+  async _getProtectedQuote(token) {
+    fetch("http://apidev.ocicat.swordage.com:3010/me", {
       method: "GET",
       headers: {
-        'Authorization': 'Bearer ' + DEMO_TOKEN
+        'Authorization': 'Bearer ' + token
       }
     })
     .then((response) => response.text())
     .then((quote) => {
-      AlertIOS.alert(
+      Alert.alert(
         "Chuck Norris Quote:", quote)
     })
     .done();
   };
 
-
-  async _userLogout() {
-    try {
-      await AsyncStorage.removeItem(STORAGE_KEY);
-      AlertIOS.alert("Logout Success!")
-    } catch (error) {
-      console.log('AsyncStorage error: ' + error.message);
-    }
-  };
 
   changeLogin = () => {
     this.setState({
