@@ -17,6 +17,7 @@ import EditView from '../lib/EditView';
 import LoginButton from '../lib/LoginButton';
 import LoginSuccess from '../ui/LoginSuccess';
 import NetUitl from '../lib/NetUtil';
+import Util from '../lib/Util';
 import SmallLoginButton from '../lib/SmallLoginButton'
 import DeviceStorage from '../lib/DeviceStorage'
 // tcomb-form-native
@@ -88,7 +89,7 @@ export default class LoginActivity extends Component {
                 }}/>
                <EditView name='输入密码' onChangeText={(text) => {
                     this.password = text;
-                }}/>
+                }} secureTextEntry = {true}/>
                 <LoginButton name='登录' onPressCallback={this._userLogin}/>
               </View> :
               <View style={{
@@ -98,8 +99,8 @@ export default class LoginActivity extends Component {
                 }}/>
                <EditView name='输入密码' onChangeText={(text) => {
                     this.password = text;
-                }}/>
-                <LoginButton name='注册' onPressCallback={this.onPressCallback}/>
+                }} />
+                <LoginButton name='注册' onPressCallback={this._userSignup}/>
               </View>
             }
           </View>
@@ -136,40 +137,68 @@ export default class LoginActivity extends Component {
   };
 
   _userLogin= () => {
+    var self = this;
+    var userText = self.userName;
+    if (!this._isExistUser(userText)) {
+      Alert.alert(
+      "Login failed!",
+      "Click the register button to register an account!"
+      );
+      return;
+    }
+    var emailText = Util.checkEmail(userText) ? userText : "";
+    var passwordText = self.password;
     var value =  {
       data: {
-        username: 'xiaoyuervae',
-        password: 'standby123@',
-        email: 'xiaoyuervae@icloud.com'
+        username: self.userName,
+        password: self.password,
+        email: emailText
       }
     };
     DeviceStorage.get(value.data.username)
-    .then( (token) => {
-      if (token) {
-        this._getProtectedQuote(token);
+      .then( (token) => {
+        if (token) {
+          this._getProtectedQuote(token);
+        }
+        else if (value) {  // if validation fails, value will be null
+          fetch( "http://apidev.ocicat.swordage.com:3010/me", {
+              method:  "POST",
+              headers: {
+                  'Accept':  'application/json',
+                  'Content-Type':  'application/json'
+              },
+              body: JSON.stringify(value)
+          })
+          .then((response) => response.json())
+          .then((responseData) => {
+              console.log(JSON.stringify(responseData));
+              Alert.alert(
+              "Login Success!",
+              "Click the button to get a Chuck Norris quote!"
+              ),
+              DeviceStorage.save(STORAGE_KEY, responseData.token);
+              this._getProtectedQuote(responseData.token);
+          })
+          .done();
+        }
+      });
+  };
+
+  _isExistUser = (userText) => {
+    console.log(userText);
+    fetch("http://apidev.ocicat.swordage.com:3010/user?username=" + userText, {
+      method: "GET",
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
       }
-      else if (value) {  // if validation fails, value will be null
-        fetch( "http://apidev.ocicat.swordage.com:3010/me", {
-            method:  "POST",
-            headers: {
-                'Accept':  'application/json',
-                'Content-Type':  'application/json'
-            },
-            body: JSON.stringify(value)
-        })
-        .then((response) => response.json())
-        .then((responseData) => {
-            console.log(JSON.stringify(responseData));
-            Alert.alert(
-            "Login Success!",
-            "Click the button to get a Chuck Norris quote!"
-            ),
-            DeviceStorage.save(STORAGE_KEY, responseData.token);
-            this._getProtectedQuote(responseData.token);
-        })
-        .done();
+    })
+    .then((response) => {
+      console.log(response.text());
+      if (response) {
+        return true;
       }
-    });
+      return false;
+    })
   };
 
 

@@ -20,6 +20,7 @@ export default class EditView extends Component {
       <View style={LoginStyles.TextInputView}>
        <TextInput style={LoginStyles.TextInput}
          placeholder={this.props.name}
+         secureTextEntry={this.props.secureTextEntry}
          onChangeText={
            (text) => {
              this.setState({text});
