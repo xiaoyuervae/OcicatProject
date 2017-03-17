@@ -1,17 +1,16 @@
-
 import React, {
-  Component
+    Component
 } from 'react';
 import {
-  ToolbarAndroid,
-  AppRegistry,
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  TextInput,
-  TouchableOpacity,
-  Alert,
+    ToolbarAndroid,
+    AppRegistry,
+    StyleSheet,
+    View,
+    Text,
+    Image,
+    TextInput,
+    TouchableOpacity,
+    Alert,
 } from 'react-native';
 import EditView from '../lib/EditView';
 import LoginButton from '../lib/LoginButton';
@@ -20,254 +19,230 @@ import NetUitl from '../lib/NetUtil';
 import Util from '../lib/Util';
 import SmallLoginButton from '../lib/SmallLoginButton'
 import DeviceStorage from '../lib/DeviceStorage'
-// tcomb-form-native
-var t = require('tcomb-form-native');
-var STORAGE_KEY =  'id_token';
-var Form = t.form.Form;
-var Person = t.struct({
-    username: t. String,
-    password: t. String
-});
-const options = {};
+import Config from '../config/config'
+let STORAGE_KEY = 'id_token';
 
 export default class LoginActivity extends Component {
-  constructor(props) {
-    super(props);
-    this.userName = "";
-    this.password = "";
-    this.state = {
-      isLoginOrSignup: true
-    };
-  }
+    constructor(props) {
+        super(props);
+        this.userName = "";
+        this.password = "";
+        this.state = {
+            isLoginOrSignUp: true
+        };
+    }
 
-  render() {
-    return (
-      <View style={LoginStyles.backgroundView}>
-        <View style={LoginStyles.loginview}>
-          <View>
-            <View style={{
-                flexDirection: 'row',
-                marginTop: 30,
-                justifyContent: 'center',
-                alignItems: 'flex-start',
-            }}>
-              <Image source={require('../image/login.png')}/>
+    render() {
+        return (
+            <View style={LoginStyles.backgroundView}>
+                <View style={LoginStyles.loginview}>
+                    <View>
+                        <View style={{
+                            flexDirection: 'row',
+                            marginTop: 30,
+                            justifyContent: 'center',
+                            alignItems: 'flex-start',
+                        }}>
+                            <Image source={require('../image/login.png')}/>
+                        </View>
+                        <View style={{
+                            flexDirection: 'row',
+                            marginTop: 5,
+                            justifyContent: 'center',
+                            alignItems: 'flex-start',
+                        }}>
+                            <Text style={{
+                                fontFamily: 'iconfont',
+                                fontSize: 40,
+                            }}>奥西签到</Text>
+                        </View>
+                        <View style={{
+                            marginTop: 30,
+                            height: 1,
+                            backgroundColor: 'gray',
+                        }}/>
+                        <View style={{
+                            flexDirection: 'row',
+                            height: 60,
+                            justifyContent: 'space-around',
+                            paddingTop: 10,
+                            paddingLeft: 40,
+                            paddingRight: 40,
+                        }}>
+                            <SmallLoginButton onPressCallback={this.changeLogin} name="登录"/>
+                            <SmallLoginButton onPressCallback={this.changeSignup} name="注册"/>
+                        </View>
+                        { this.state.isLoginOrSignUp == true ?
+                            <View style={{}}>
+                                <EditView name='输入用户名/注册手机号' onChangeText={(text) => {
+                                    this.userName = text;
+                                }}/>
+                                <EditView name='输入密码' onChangeText={(text) => {
+                                    this.password = text;
+                                }} secureTextEntry={true}/>
+                                <LoginButton name='登录' onPressCallback={this._userLogin}/>
+                            </View> :
+                            <View style={{}}>
+                                <EditView name='输入用户名/注册手机号' onChangeText={(text) => {
+                                    this.userName = text;
+                                }}/>
+                                <EditView name='输入密码' onChangeText={(text) => {
+                                    this.password = text;
+                                }}/>
+                                <LoginButton name='注册' onPressCallback={this._userSignUp}/>
+                            </View>
+                        }
+                    </View>
+                </View>
             </View>
-            <View style={{
-              flexDirection: 'row',
-              marginTop: 5,
-              justifyContent: 'center',
-              alignItems: 'flex-start',
-            }}>
-              <Text style={{
-                fontFamily:'iconfont',
-                fontSize: 40,
-              }}>奥西签到</Text>
-            </View>
-            <View style={{
-              marginTop: 30,
-              height: 1,
-              backgroundColor: 'gray',
-            }}></View>
-            <View style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              height: 60,
-              justifyContent: 'space-around',
-              paddingTop: 10,
-              paddingLeft: 40,
-              paddingRight: 40,
-            }}>
-              <SmallLoginButton onPressCallback={this.changeLogin} name="登录" />
-              <SmallLoginButton onPressCallback={this.changeSignup} name="注册" />
-            </View>
-            { this.state.isLoginOrSignup == true ?
-              <View style={{
-              }}>
-               <EditView  name='输入用户名/注册手机号' onChangeText={(text) => {
-                    this.userName = text;
-                }}/>
-               <EditView name='输入密码' onChangeText={(text) => {
-                    this.password = text;
-                }} secureTextEntry = {true}/>
-                <LoginButton name='登录' onPressCallback={this._userLogin}/>
-              </View> :
-              <View style={{
-              }}>
-               <EditView  name='输入用户名/注册手机号' onChangeText={(text) => {
-                    this.userName = text;
-                }}/>
-               <EditView name='输入密码' onChangeText={(text) => {
-                    this.password = text;
-                }} />
-                <LoginButton name='注册' onPressCallback={this._userSignup}/>
-              </View>
-            }
-          </View>
-        </View>
-      </View>
-    )
-  }
+        )
+    }
 
 
-  _userSignup = () => {
-    var value =  this.refs.form.getValue();
-    if (value) {  // if validation fails, value will be null
-        fetch( "http://localhost:3001/users", {
-            method:  "POST",
+    _userSignUp = () => {
+        let self = this;
+        let userText = self.userName;
+        let emailText = Util.checkEmail(userText) ? userText : "";
+        let passwordText = self.password;
+        // 判断用户是否存在
+        fetch("http://apidev.ocicat.swordage.com:3010/users?username=" + userText, {
+            method: "GET",
             headers: {
-                'Accept':  'application/json',
-                'Content-Type':  'application/json'
-            },
-            body: JSON.stringify({
-                username: value.username,
-                password: value.password,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        })
+            .then((response) => response.json())
+            .then((quote) => {
+                if (!quote) {
+                    // 存在返回
+                    Alert.alert("Register failed", "User exists, Please try another account");
+                } else {
+                    // 创建用户
+                    fetch("http://apidev.ocicat.swordage.com:3010/users", {
+                        method: "POST",
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            data: {
+                                username: self.userName,
+                                password: self.password,
+                                email: emailText
+                            }
+                        })
+                    })
+                        .then((response) => response.text())
+                        .then((quote) => {
+                            console.log(quote);
+                        })
+                        .done();
+                }
             })
-        })
-        .then((response) => response.json())
-        .then((responseData) => {
-            this._onValueChange(STORAGE_KEY, responseData.id_token),
-            Alert.alert(
-            "Signup Success!",
-            "Click the button to get a Chuck Norris quote!"
-            )
-        })
-        .done();
-    }
-  };
-
-  _userLogin= () => {
-    var self = this;
-    var userText = self.userName;
-    if (!this._isExistUser(userText)) {
-      Alert.alert(
-      "Login failed!",
-      "Click the register button to register an account!"
-      );
-      return;
-    }
-    var emailText = Util.checkEmail(userText) ? userText : "";
-    var passwordText = self.password;
-    var value =  {
-      data: {
-        username: self.userName,
-        password: self.password,
-        email: emailText
-      }
+            .done();
     };
-    DeviceStorage.get(value.data.username)
-      .then( (token) => {
-        if (token) {
-          this._getProtectedQuote(token);
+
+    _userLogin = () => {
+        let self = this;
+        let userText = self.userName;
+        let emailText = Util.checkEmail(userText) ? userText : "";
+        let userData = JSON.stringify({
+            data: {
+                username: self.userName,
+                password: self.password,
+                email: emailText
+            }
+        });
+        console.log("wolai");
+        // 判断用户是否存在
+        NetUitl.getJson(Config.api.getUserByName, "username", userText, (response) => {
+            if (response) {
+                console.log(JSON.stringify(response));
+                // 用户存在
+                // 查看本地localStorage中是否存在token
+                DeviceStorage.get(userText)
+                    .then((token) => {
+                        if (!token) {
+                            // 从sso中获取token
+                            self._getUserToken(userData, (response) => {
+                                if (!response.token) {
+                                    //登录失败
+                                    Alert.alert("LoginFailed", "Please Check your account and password");
+                                } else {
+                                    // 登录成功
+                                    DeviceStorage.save(STORAGE_KEY, responseData.token);
+                                    // 获取用户信息
+                                    NetUitl.getJsonByToken(Config.api.getUserByToken, response.token, (response) => {
+                                        Alert.alert(response);
+                                    })
+                                }
+                            })
+                        } else {
+                            // 获取用户信息
+
+                        }
+                    })
+            }
+        });
+    };
+
+
+    _getUserToken = (userData, callback) => {
+        let url = LoginActivity.getUserToken;
+        NetUitl.postJson(url, userData, callback);
+    };
+
+
+    changeLogin = () => {
+        this.setState({
+            isLoginOrSignUp: true
+        })
+    };
+
+    changeSignup = () => {
+        this.setState({
+            isLoginOrSignUp: false
+        });
+    };
+
+
+    //跳转到第二个页面去
+    onLoginSuccess = () => {
+        const {
+            navigator
+        } = this.props;
+        if (navigator) {
+            navigator.push({
+                name: 'LoginSuccess',
+                component: LoginSuccess,
+            });
         }
-        else if (value) {  // if validation fails, value will be null
-          fetch( "http://apidev.ocicat.swordage.com:3010/me", {
-              method:  "POST",
-              headers: {
-                  'Accept':  'application/json',
-                  'Content-Type':  'application/json'
-              },
-              body: JSON.stringify(value)
-          })
-          .then((response) => response.json())
-          .then((responseData) => {
-              console.log(JSON.stringify(responseData));
-              Alert.alert(
-              "Login Success!",
-              "Click the button to get a Chuck Norris quote!"
-              ),
-              DeviceStorage.save(STORAGE_KEY, responseData.token);
-              this._getProtectedQuote(responseData.token);
-          })
-          .done();
-        }
-      });
-  };
-
-  _isExistUser = (userText) => {
-    console.log(userText);
-    fetch("http://apidev.ocicat.swordage.com:3010/user?username=" + userText, {
-      method: "GET",
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    })
-    .then((response) => {
-      console.log(response.text());
-      if (response) {
-        return true;
-      }
-      return false;
-    })
-  };
-
-
-  async _getProtectedQuote(token) {
-    fetch("http://apidev.ocicat.swordage.com:3010/me", {
-      method: "GET",
-      headers: {
-        'Authorization': 'Bearer ' + token
-      }
-    })
-    .then((response) => response.text())
-    .then((quote) => {
-      Alert.alert(
-        "Chuck Norris Quote:", quote)
-    })
-    .done();
-  };
-
-
-  changeLogin = () => {
-    this.setState({
-      isLoginOrSignup: true
-    })
-  };
-
-  changeSignup = () => {
-    this.setState({
-      isLoginOrSignup: false
-    });
-  };
-
-
-  //跳转到第二个页面去
-  onLoginSuccess = () => {
-    const {
-      navigator
-    } = this.props;
-    if (navigator) {
-      navigator.push({
-        name: 'LoginSuccess',
-        component: LoginSuccess,
-      });
     }
-  }
 }
 
 class loginLineView extends Component {
-  render() {
-    return (
-      <Text >
-        没有帐号
-      </Text>
-    );
-  }
+    render() {
+        return (
+            <Text >
+                没有帐号
+            </Text>
+        );
+    }
 }
 
 const LoginStyles = StyleSheet.create({
-  backgroundView: {
-    flex: 1,
-    backgroundColor: '#79C4E4',
-    paddingTop: 20,
-    paddingLeft: 20,
-    paddingRight: 20
-  },
-  loginview: {
-    flex: 1,
-    paddingLeft: 10,
-    paddingRight: 10,
-    backgroundColor: '#ffffff',
-    borderRadius: 10
-  },
+    backgroundView: {
+        flex: 1,
+        backgroundColor: '#79C4E4',
+        paddingTop: 20,
+        paddingLeft: 20,
+        paddingRight: 20
+    },
+    loginview: {
+        flex: 1,
+        paddingLeft: 10,
+        paddingRight: 10,
+        backgroundColor: '#ffffff',
+        borderRadius: 10
+    },
 });
