@@ -1,14 +1,17 @@
+import Util from "./Util";
 let NetUtil;
+
 let fetchFunction = (url, options, callback) => {
     fetch(url, options)
         .then((response) => response.text())
         .then((responseText) => {
-            console.log("我又来了");
-            //  callback(JSON.parse(responseText));
-            console.log(responseText);
-            callback(responseText);
+            if (Util.isNotBlank(responseText)) {
+                callback(responseText);
+            } else {
+                callback(JSON.parse(responseText));
+            }
         }).done();
-}
+};
 NetUtil = {
     postJson(url, data, callback){
         let fetchOptions = {
@@ -29,7 +32,6 @@ NetUtil = {
                 'Content-Type': 'application/x-www-form-urlencoded'
             }
         };
-        console.log("我来了");
         url = url + "?" + key + "=" + value;
         fetchFunction(url, getOptions, callback);
     },
@@ -43,7 +45,6 @@ NetUtil = {
         };
         fetchFunction(url, getTokenOptions, callback);
     },
-
 };
 export default NetUtil;
 

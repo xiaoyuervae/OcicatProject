@@ -20,7 +20,6 @@ import Util from '../lib/Util';
 import SmallLoginButton from '../lib/SmallLoginButton'
 import DeviceStorage from '../lib/DeviceStorage'
 import Config from '../config/config'
-let STORAGE_KEY = 'id_token';
 
 export default class LoginActivity extends Component {
     constructor(props) {
@@ -70,11 +69,11 @@ export default class LoginActivity extends Component {
                             paddingRight: 40,
                         }}>
                             <SmallLoginButton onPressCallback={this.changeLogin} name="登录"/>
-                            <SmallLoginButton onPressCallback={this.changeSignup} name="注册"/>
+                            <SmallLoginButton onPressCallback={this.changeSignUp} name="注册"/>
                         </View>
                         { this.state.isLoginOrSignUp == true ?
                             <View style={{}}>
-                                <EditView name='输入用户名/注册手机号' onChangeText={(text) => {
+                                <EditView name='输入用户名/注册邮箱' onChangeText={(text) => {
                                     this.userName = text;
                                 }}/>
                                 <EditView name='输入密码' onChangeText={(text) => {
@@ -83,12 +82,15 @@ export default class LoginActivity extends Component {
                                 <LoginButton name='登录' onPressCallback={this._userLogin}/>
                             </View> :
                             <View style={{}}>
-                                <EditView name='输入用户名/注册手机号' onChangeText={(text) => {
+                                <EditView name='输入用户名' onChangeText={(text) => {
                                     this.userName = text;
+                                }}/>
+                                <EditView name='输入邮箱' onChangeText={(text) => {
+                                    this.email = text;
                                 }}/>
                                 <EditView name='输入密码' onChangeText={(text) => {
                                     this.password = text;
-                                }}/>
+                                }} secureTextEntry={true}/>
                                 <LoginButton name='注册' onPressCallback={this._userSignUp}/>
                             </View>
                         }
@@ -101,94 +103,67 @@ export default class LoginActivity extends Component {
 
     _userSignUp = () => {
         let self = this;
-        let userText = self.userName;
-        let emailText = Util.checkEmail(userText) ? userText : "";
-        let passwordText = self.password;
-        // 判断用户是否存在
-        fetch("http://apidev.ocicat.swordage.com:3010/users?username=" + userText, {
-            method: "GET",
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+        let userData = JSON.stringify({
+            data: {
+                username: self.userName,
+                password: self.password,
+                email: self.email
             }
-        })
-            .then((response) => response.json())
-            .then((quote) => {
-                if (!quote) {
-                    // 存在返回
-                    Alert.alert("Register failed", "User exists, Please try another account");
-                } else {
-                    // 创建用户
-                    fetch("http://apidev.ocicat.swordage.com:3010/users", {
-                        method: "POST",
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            data: {
-                                username: self.userName,
-                                password: self.password,
-                                email: emailText
-                            }
-                        })
-                    })
-                        .then((response) => response.text())
-                        .then((quote) => {
-                            console.log(quote);
-                        })
-                        .done();
-                }
-            })
-            .done();
+        });
+        // 提交Post请求
+        NetUitl.postJson(Config.api.users, userData, (response) => {
+          if (!response) {
+              Alert.alert("Register succeed");
+              //跳转到登录界面
+              self.changeLogin()
+          } else {
+              Alert.alert(response.message, JSON.stringify(response.errors));
+          }
+        });
     };
 
     _userLogin = () => {
         let self = this;
         let userText = self.userName;
         let emailText = Util.checkEmail(userText) ? userText : "";
+        userText = emailText ? "" : userText;
         let userData = JSON.stringify({
             data: {
-                username: self.userName,
+                username: userText,
                 password: self.password,
                 email: emailText
             }
         });
-        console.log("wolai");
-        // 判断用户是否存在
-        NetUitl.getJson(Config.api.getUserByName, "username", userText, (response) => {
-            if (response) {
-                console.log(JSON.stringify(response));
-                // 用户存在
-                // 查看本地localStorage中是否存在token
-                DeviceStorage.get(userText)
-                    .then((token) => {
-                        if (!token) {
-                            // 从sso中获取token
-                            self._getUserToken(userData, (response) => {
-                                if (!response.token) {
-                                    //登录失败
-                                    Alert.alert("LoginFailed", "Please Check your account and password");
-                                } else {
-                                    // 登录成功
-                                    DeviceStorage.save(STORAGE_KEY, responseData.token);
-                                    // 获取用户信息
-                                    NetUitl.getJsonByToken(Config.api.getUserByToken, response.token, (response) => {
-                                        Alert.alert(response);
-                                    })
-                                }
-                            })
+        // 查看本地localStorage中是否存在用户token
+        DeviceStorage.get(userText + "token")
+            .then((token) => {
+                if (!token) {
+                    // 从sso中获取token
+                    self._getUserToken(userData, (response) => {
+                        if (!response.token) {
+                            //登录失败
+                            Alert.alert("LoginFailed", "Please Check your account and password");
                         } else {
-                            // 获取用户信息
-
+                            // 登录成功
+                            DeviceStorage.save(userText + "token", response.token);
+                            // TODO 获取用户信息，跳转到下一界面
+                            NetUitl.getJsonByToken(Config.api.me, response.token, (response) => {
+                                Alert.alert("User info:", JSON.stringify(response));
+                            })
                         }
                     })
-            }
-        });
+                } else {
+                    // TODO 获取用户信息，跳转到下一界面
+                    NetUitl.getJsonByToken(Config.api.me, token, (response) => {
+                        Alert.alert("User info:", JSON.stringify(response));
+                    })
+                }
+            }).done();
     };
 
 
     _getUserToken = (userData, callback) => {
-        let url = LoginActivity.getUserToken;
+        let url = Config.api.me;
         NetUitl.postJson(url, userData, callback);
     };
 
@@ -199,7 +174,7 @@ export default class LoginActivity extends Component {
         })
     };
 
-    changeSignup = () => {
+    changeSignUp = () => {
         this.setState({
             isLoginOrSignUp: false
         });
