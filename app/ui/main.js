@@ -1,25 +1,13 @@
-import React, {
-    Component
-} from 'react';
-import {
-    ToolbarAndroid,
-    AppRegistry,
-    StyleSheet,
-    View,
-    Text,
-    Image,
-    TextInput,
-    TouchableOpacity,
-    Alert,
-} from 'react-native';
-import EditView from '../lib/EditView';
-import LoginButton from '../lib/LoginButton';
-import LoginSuccess from '../ui/LoginSuccess';
-import NetUitl from '../lib/NetUtil';
-import Util from '../lib/Util';
-import SmallLoginButton from '../lib/SmallLoginButton'
-import DeviceStorage from '../lib/DeviceStorage'
-import Config from '../config/config'
+import React, {Component} from "react";
+import {Alert, Image, StyleSheet, Text, View} from "react-native";
+import EditView from "../lib/EditView";
+import LoginButton from "../lib/LoginButton";
+import LoginSuccess from "../ui/LoginSuccess";
+import NetUitl from "../lib/NetUtil";
+import Util from "../lib/Util";
+import SmallLoginButton from "../lib/SmallLoginButton";
+import DeviceStorage from "../lib/DeviceStorage";
+import Config from "../config/config";
 
 export default class LoginActivity extends Component {
     constructor(props) {
@@ -42,7 +30,7 @@ export default class LoginActivity extends Component {
                             justifyContent: 'center',
                             alignItems: 'flex-start',
                         }}>
-                            <Image source={require('../image/login.png')}/>
+                            <Image source={require('./login.png')}/>
                         </View>
                         <View style={{
                             flexDirection: 'row',
@@ -112,13 +100,13 @@ export default class LoginActivity extends Component {
         });
         // 提交Post请求
         NetUitl.postJson(Config.api.users, userData, (response) => {
-          if (!response) {
-              Alert.alert("Register succeed");
-              //跳转到登录界面
-              self.changeLogin()
-          } else {
-              Alert.alert(response.message, JSON.stringify(response.errors));
-          }
+            if (!response) {
+                Alert.alert("Register succeed");
+                //跳转到登录界面
+                self.changeLogin()
+            } else {
+                Alert.alert(response.message, JSON.stringify(response.errors));
+            }
         });
     };
 
